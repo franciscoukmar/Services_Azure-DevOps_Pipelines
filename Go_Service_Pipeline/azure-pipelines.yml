@@ -71,3 +71,13 @@ steps:
     ArtifactName: 'drop'
     publishLocation: 'Container'
   displayName: 'Publish artifacts'
+
+- script: |
+    # Check the deployment status
+    if [ "$DEPLOY_STATUS" != "success" ]; then
+      echo "Deployment failed, starting rollback..."
+      # Execute rollback script
+      ./rollback.sh
+    fi
+  displayName: 'Rollback if deployment fails'
+  condition: failed()

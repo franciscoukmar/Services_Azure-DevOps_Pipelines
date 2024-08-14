@@ -1,7 +1,5 @@
 trigger:
-  branches:
-    include:
-      - main
+- main
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -18,14 +16,51 @@ steps:
   displayName: 'Install dependencies'
 
 - script: |
-    python -m unittest discover -s . -p "test_*.py"
-  displayName: 'Run tests'
+    pytest --junitxml=test-results.xml --cov=app --cov-report=xml
+  displayName: 'Run tests and generate coverage report'
+
+- task: PublishTestResults@2
+  inputs:
+    testResultsFiles: '**/test-results.xml'
+    testRunTitle: 'Python Unit Tests'
+  displayName: 'Publish Test Results'
 
 - script: |
-    python app.py &
+    coverage_percentage=$(python -c "import xml.etree.ElementTree as ET; tree = ET.parse('coverage.xml'); root = tree.getroot(); total = int(root.find('coverage').get('lines-valid')); covered = int(root.find('coverage').get('lines-covered')); print((covered/total)*100)")
+    echo "Code Coverage: $coverage_percentage%"
+    if [ $(echo "$coverage_percentage < 70" | bc) -eq 1 ]; then
+      echo "Coverage too low!"
+      exit 1
+    fi
+  displayName: 'Check coverage threshold'
+  condition: succeededOrFailed()
+
+- script: |
+    pip install flask
+    python -m flask run --host=0.0.0.0 &
     sleep 5
-  displayName: 'Run service'
+  displayName: 'Start Flask app'
 
 - script: |
     curl http://localhost:5000
-  displayName: 'Test service'
+  displayName: 'Test Flask endpoint'
+
+- script: |
+    pkill -f "python -m flask"
+  displayName: 'Stop Flask app'
+
+- task: ArchiveFiles@2
+  inputs:
+    rootFolderOrFile: '$(System.DefaultWorkingDirectory)'
+    includeRootFolder: false
+    archiveType: 'zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+    replaceExistingArchive: true
+  displayName: 'Archive files'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'drop'
+    publishLocation: 'Container'
+  displayName: 'Publish artifacts'

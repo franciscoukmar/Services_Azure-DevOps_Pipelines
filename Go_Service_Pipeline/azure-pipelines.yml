@@ -1,34 +1,73 @@
 trigger:
-  branches:
-    include:
-      - main
+- main
 
 pool:
   vmImage: 'ubuntu-latest'
 
 steps:
-- task: UseGoVersion@0
+- task: GoTool@0
   inputs:
-    version: '1.x'
+    version: '1.16'
     addToPath: true
 
 - script: |
+    go mod download
+  displayName: 'Download Go dependencies'
+
+- script: |
     go mod tidy
-  displayName: 'Ensure dependencies'
+  displayName: 'Tidy up the go.mod file'
 
 - script: |
-    go test -v ./...
-  displayName: 'Run tests'
+    go test -v ./... -coverprofile=coverage.out
+  displayName: 'Run tests and generate coverage report'
 
 - script: |
-    go build -o myapp .
-  displayName: 'Build application'
+    go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//g' > coverage.txt
+    coverage_percentage=$(cat coverage.txt)
+    echo "Code Coverage: $coverage_percentage%"
+    if [ $(echo "$coverage_percentage < 70" | bc) -eq 1 ]; then
+      echo "Coverage too low!"
+      exit 1
+    fi
+  displayName: 'Check coverage threshold'
+  condition: succeededOrFailed()
+
+- task: PublishTestResults@2
+  inputs:
+    testResultsFiles: '**/coverage.out'
+    testRunTitle: 'Go Unit Tests'
+  displayName: 'Publish Test Results'
+
+- script: |
+    go build -o myapp
+  displayName: 'Build Go application'
 
 - script: |
     ./myapp &
     sleep 5
-  displayName: 'Run service'
+  displayName: 'Start Go app'
 
 - script: |
     curl http://localhost:8080
-  displayName: 'Test service'
+  displayName: 'Test Go app endpoint'
+
+- script: |
+    pkill myapp
+  displayName: 'Stop Go app'
+
+- task: ArchiveFiles@2
+  inputs:
+    rootFolderOrFile: '$(System.DefaultWorkingDirectory)'
+    includeRootFolder: false
+    archiveType: 'zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+    replaceExistingArchive: true
+  displayName: 'Archive files'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'drop'
+    publishLocation: 'Container'
+  displayName: 'Publish artifacts'

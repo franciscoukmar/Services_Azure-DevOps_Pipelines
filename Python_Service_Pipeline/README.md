@@ -1,32 +1,10 @@
-# PYTHON APP DOCUMENTATION
+# Python Service Pipeline - Hello World
 
-## TESTING LOCAL PYTHON APP
+This is a simplified example of an Azure DevOps Pipeline for a "Hello World" web application written in Python (Flask).
 
-### Install python
+## How to test
 
-### Check python and pip versions
-- `python --version`
-- `pip --version`
-
-### Create local environment
-- `python -m venv venv`
-> If this command does not return any response, check on system32 folder if there's a /venv folder. If that's the case, the environment was successfully created
-
-### Activate environment
-- `.\venv\Scripts\activate`
-> If there's a (venv) at the beggining, it was successfully activated
-
-### Install the dependencies listed in requirements.txt
-pip install -r requirements.txt
-
-### Execute the app
-python app.py
-
-### Check in browser
-http://127.0.0.1:5000
-> You will see "Hola Mundo"
-
-### Deactivate the environment
-deactivate
-> This command should be use where the (venv) is located
+1. Upload this repository to Azure Repos or GitHub.
+2. Create a new Pipeline in Azure DevOps by selecting the `azure-pipelines.yml` file located in this folder.
+3. The pipeline will install Python, its dependencies (Flask, pytest), and run the tests.
 

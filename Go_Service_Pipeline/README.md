@@ -1,19 +1,9 @@
-# GO APP DOCUMENTATION
+# Go Service Pipeline - Hello World
 
-## TEST LOCAL
-### Initialize the module
-- `go mod init go_service_pipeline`
+This is a simplified example of an Azure DevOps Pipeline for a "Hello World" web application written in Go.
 
-### Inside the Repo, build the application
-- `go build -o myapp.exe`
+## How to test
 
-### In powershell or CMD execute the application
-- `./myapp.exe`
-
-### Navigate to localhost in a browser and check if the message "Hola Mundo" is available
-- `http://localhost:8080`
-
-### Deactive the local environment with ctrl+c
-
-### For the deletion of the created files
-- `rm myapp`
+1. Upload this repository to Azure Repos or GitHub.
+2. Create a new Pipeline in Azure DevOps by selecting the `azure-pipelines.yml` file located in this folder.
+3. The pipeline will install Go, build the application, and run the tests.

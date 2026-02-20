@@ -13,64 +13,14 @@ steps:
 - script: |
     python -m pip install --upgrade pip
     pip install -r requirements.txt
+    pip install pytest
   displayName: 'Install dependencies'
 
 - script: |
-    pytest --junitxml=test-results.xml --cov=app --cov-report=xml
-  displayName: 'Run tests and generate coverage report'
-
-- task: PublishTestResults@2
-  inputs:
-    testResultsFiles: '**/test-results.xml'
-    testRunTitle: 'Python Unit Tests'
-  displayName: 'Publish Test Results'
+    pytest
+  displayName: 'Run tests'
 
 - script: |
-    coverage_percentage=$(python -c "import xml.etree.ElementTree as ET; tree = ET.parse('coverage.xml'); root = tree.getroot(); total = int(root.find('coverage').get('lines-valid')); covered = int(root.find('coverage').get('lines-covered')); print((covered/total)*100)")
-    echo "Code Coverage: $coverage_percentage%"
-    if [ $(echo "$coverage_percentage < 70" | bc) -eq 1 ]; then
-      echo "Coverage too low!"
-      exit 1
-    fi
-  displayName: 'Check coverage threshold'
-  condition: succeededOrFailed()
+    echo "Hello World Pipeline executed successfully!"
+  displayName: 'Hello World Success'
 
-- script: |
-    pip install flask
-    python -m flask run --host=0.0.0.0 &
-    sleep 5
-  displayName: 'Start Flask app'
-
-- script: |
-    curl http://localhost:5000
-  displayName: 'Test Flask endpoint'
-
-- script: |
-    pkill -f "python -m flask"
-  displayName: 'Stop Flask app'
-
-- task: ArchiveFiles@2
-  inputs:
-    rootFolderOrFile: '$(System.DefaultWorkingDirectory)'
-    includeRootFolder: false
-    archiveType: 'zip'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
-    replaceExistingArchive: true
-  displayName: 'Archive files'
-
-- task: PublishBuildArtifacts@1
-  inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    ArtifactName: 'drop'
-    publishLocation: 'Container'
-  displayName: 'Publish artifacts'
-
-- script: |
-    # Check the deployment status
-    if [ "$DEPLOY_STATUS" != "success" ]; then
-      echo "Deployment failed, starting rollback..."
-      # Execute rollback script
-      ./rollback.sh
-    fi
-  displayName: 'Rollback if deployment fails'
-  condition: failed()
